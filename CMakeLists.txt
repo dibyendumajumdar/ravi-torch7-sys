@@ -1,14 +1,53 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6 FATAL_ERROR)
 CMAKE_POLICY(VERSION 2.6)
 
-FIND_PACKAGE(Torch REQUIRED)
+option(USE_LUA53 "Controls whether the library will be for Lua 5.3 or Ravi, default is OFF" OFF)
+
+SET(CMAKE_MODULE_PATH
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+  "${CMAKE_MODULE_PATH}")
+
+find_package(Lua REQUIRED)
+
+message(STATUS "LUA_INCLUDE_DIR: ${LUA_INCLUDE_DIR}")
+message(STATUS "LUA_LIBRARIES  : ${LUA_LIBRARIES}")
+
+message(STATUS "LUA_INCDIR     : ${LUA_INCDIR}")
+message(STATUS "LUA_LIBDIR     : ${LUA_LIBDIR}")
+message(STATUS "LUA_BINDIR     : ${LUA_BINDIR}")
+message(STATUS "LUALIB         : ${LUALIB}")
+message(STATUS "LIBDIR (LUA_CPATH)  : ${LIBDIR}")
+message(STATUS "LUADIR (LUA_PATH)   : ${LUADIR}")
+
+INCLUDE_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}")
+INCLUDE_DIRECTORIES("${LUA_INCDIR}")
+LINK_DIRECTORIES("${LUA_LIBDIR}")
 
 SET(src sys.c)
 SET(luasrc init.lua colors.lua fpath.lua)
 
-ADD_TORCH_PACKAGE(sys "${src}" "${luasrc}")
+# When using MSVC
+IF(MSVC)
+  # we want to respect the standard, and we are bored of those **** .
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE=1)
+ENDIF(MSVC)
 
-TARGET_LINK_LIBRARIES(sys luaT TH)
+ADD_LIBRARY("sys" MODULE ${src})
+SET_TARGET_PROPERTIES("sys" PROPERTIES
+  PREFIX "lib"
+  IMPORT_PREFIX "lib")
+
+IF(APPLE)
+  SET_TARGET_PROPERTIES("sys" PROPERTIES
+    LINK_FLAGS "-undefined dynamic_lookup")
+ENDIF()
+
+INSTALL(FILES ${luasrc} DESTINATION ${LUADIR}/sys)
+INSTALL(TARGETS sys
+  LIBRARY DESTINATION ${LIBDIR}
+  RUNTIME DESTINATION ${LUA_BINDIR})
+
 IF(LUALIB)
   TARGET_LINK_LIBRARIES(sys ${LUALIB})
 ENDIF()
+
