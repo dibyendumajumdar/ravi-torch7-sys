@@ -66,19 +66,7 @@ end
 -- more reliable
 --------------------------------------------------------------------------------
 function sys.uname()
-   if paths.dirp('C:\\') then
-      return 'windows'
-   else
-      local ffi = require 'ffi'
-      local os = ffi.os
-      if os:find('Linux') then
-         return 'linux'
-      elseif os:find('OSX') then
-         return 'macos'
-      else
-         return '?'
-      end
-   end
+   return paths.uname()
 end
 sys.OS = sys.uname()
 
